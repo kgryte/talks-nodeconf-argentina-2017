@@ -1,0 +1,50 @@
+{
+  "name": "talks-nodeconf-argentina-2017",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Talk for NodeConf Argentina (2017).",
+  "author": {
+    "name": "Athan Reines",
+    "email": "kgryte@gmail.com"
+  },
+  "contributors": [
+    {
+      "name": "Athan Reines",
+      "email": "kgryte@gmail.com"
+    }
+  ],
+  "scripts": {},
+  "main": "",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kgryte/talks-nodeconf-argentina-2017.git"
+  },
+  "keywords": [
+		"talk",
+		"slides",
+		"presentation",
+    "nodeconf",
+    "argentina",
+    "ar",
+    "math",
+    "mathematics",
+    "numeric computing",
+    "machine learning",
+    "javascript",
+    "js",
+    "nodejs",
+    "node",
+    "native",
+    "addons",
+    "add-ons"
+	],
+  "bugs": {
+    "url": "https://github.com/kgryte/talks-nodeconf-argentina-2017/issues"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "jshint": "2.x.x",
+    "jshint-stylish": "2.x.x"
+  },
+  "license": ""
+}

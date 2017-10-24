@@ -1,0 +1,2119 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+
+	<title>Talk | NodeConf Argentina, 2017 | Node.js Add-ons for High Performance Numeric Computing</title>
+
+	<meta name="description" content="Node.js add-ons allow native code to be run from the Node.js runtime. In this talk, I will discuss how to utilize native add-ons for high performance numeric computing and machine learning in Node.js applications. I will first provide an overview of add-ons and their associated toolchain. Next, I will walk through an example which involves compiling basic linear algebra subroutines (BLAS), a suite of libraries which are a core foundation of most modern numeric computing environments, as native add-ons. While Node.js add-ons are oriented toward C and C++, I will show how to extend compilation support to Fortran libraries in order to maximize computational performance. Throughout the talk, I will offer lessons learned and other insights gained while writing add-ons and demonstrate why Node.js is an excellent environment for high performance numeric computing and machine learning.">
+	<meta name="author" content="Athan Reines">
+
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+	<!-- Icons -->
+	<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+	<link rel="manifest" href="manifest.json">
+	<link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5">
+	<meta name="theme-color" content="#ffffff">
+
+	<!-- Facebook Open Graph -->
+	<meta property="og:type" content="website">
+	<meta property="og:site_name" content="stdlib">
+	<meta property="og:url" content="https://stdlib.io/">
+	<meta property="og:title" content="A standard library for JavaScript and Node.js.">
+	<meta property="og:description" content="stdlib is a standard library for JavaScript and Node.js, with an emphasis on numeric computing.">
+	<meta property="og:locale" content="en_US">
+	<meta property="og:image" content="">
+
+	<!-- Twitter -->
+	<meta name="twitter:card" content="A standard library for JavaScript and Node.js.">
+	<meta name="twitter:site" content="@stdlibjs">
+	<meta name="twitter:url" content="https://stdlib.io/">
+	<meta name="twitter:title" content="stdlib">
+	<meta name="twitter:description" content="stdlib is a standard library for JavaScript and Node.js, with an emphasis on numeric computing.">
+	<meta name="twitter:image" content="">
+
+	<!-- Stylesheets -->
+	<link rel="stylesheet" href="css/grid.css">
+	<link rel="stylesheet" href="css/font-awesome.css">
+	<link rel="stylesheet" href="css/reveal.css">
+	<link rel="stylesheet" href="css/theme/white.css">
+	<link rel="stylesheet" href="css/style.css">
+
+	<!-- Code syntax highlighting -->
+	<link rel="stylesheet" href="css/code/zenburn.css">
+
+	<!-- Printing and PDF exports -->
+	<script src="js/lib/reveal/pdf.js"></script>
+
+	<!--[if lt IE 9]>
+	<script src="js/lib/reveal/html5shiv.js"></script>
+	<![endif]-->
+</head>
+
+<body>
+
+	<header>
+		<a href="https://github.com/stdlib-js/stdlib"><img src="img/long_logo_white.svg" alt="stdlib"></a>
+	</header>
+
+	<div class="reveal">
+
+		<!-- Any section element inside of this container is displayed as a slide -->
+		<div class="slides">
+			<section id="splash" class="center" data-transition="fade-out">
+				<div>
+					<a href="https://github.com/stdlib-js/stdlib"><img src="img/long_logo_white.svg" alt="stdlib" class="undecorated" height="35%" width="35%"></a>
+				</div>
+				<div>
+					<small><a href="https://github.com/kgryte"><i class="fa fa-github"></i> Athan Reines</a> | <a href="https://twitter.com/kgryte"><i class="fa fa-twitter"></i> @kgryte</a> | <a href="https://twitter.com/stdlibjs"><i class="fa fa-twitter"></i> @stdlibjs</a></small>
+				</div>
+				<!-- <div>
+					<a href="https://github.com/stdlib-js/stdlib"><img src="img/hex_sticker_black.svg" alt="stdlib" class="undecorated"></a>
+				</div> -->
+				<aside class="notes">
+
+				</aside>
+			</section>
+
+			<section id="title-slide" class="center">
+				<h1>Node.js Add-ons for High Performance Numeric Computing</h1>
+
+				<aside class="notes">
+
+				</aside>
+			</section>
+
+			<section class="center">
+				<h2 class="no-text-transform">Survey</h2>
+
+				<aside class="notes">
+					<ul>
+						<li>Who here has heard of Node.js native add-ons?</li>
+						<li>Anyone here hearing about Node.js native add-ons for the first time?</li>
+						<li>Who here has written a native add-on?</li>
+						<li>Who here has used a Node.js native add-on for numeric computing?</li>
+					</ul>
+				</aside>
+			</section>
+
+			<section class="center">
+				<h2 class="no-text-transform">Overview</h2>
+
+				<div class="row">
+					<ul class="column column-3">
+						&nbsp;
+					</ul>
+					<ol class="column column-8">
+						<li class="fragment">Intro</li>
+						<li class="fragment">Toolchain</li>
+						<li class="fragment">Numeric Computing</li>
+						<li class="fragment">Basic Example</li>
+						<li class="fragment">BLAS</li>
+						<li class="fragment">Performance</li>
+						<li class="fragment">Challenges</li>
+						<li class="fragment">N-API</li>
+						<li class="fragment">Conclusions</li>
+					</ol>
+				</div>
+
+				<aside class="notes">
+					<p>
+						This talk will be technical, but we will try to avoid going too far into the weeds. :)
+					</p>
+					<ul>
+   						<li>
+   							First, I will provide an overview of Node.js native add-ons.
+   						</li>
+   						<li>
+   							Next, I will introduce the current toolchain for authoring add-ons.
+   						</li>
+   						<li>
+   							Then, I will touch on why native add-ons are important for numeric computing.
+   						</li>
+   						<li>
+  							I'll follow by showing a basic native add-on example.
+  						</li>
+   						<li>
+   							After the basic example, I'll move on to a more complex example where we need to write an add-on which links a BLAS library written in Fortran to the the JavaScript runtime.
+   						</li>
+   						<li>
+   							Next, I'll will show performance comparisons.
+   						</li>
+   						<li>
+   							Then, I'll discuss some of the hurdles we have faced writing native add-ons for numeric computing and how we have worked to address them.
+   						</li>
+   						<li>
+   							Before concluding, I will mention N-API, an application binary interface, or ABI, which aims to provide a stable abstraction layer over JavaScript engines.
+   						</li>
+   						<li>
+   							And finally, I will offer some conclusions and additional resources you can use to get started using Node.js native add-ons for high-performance numeric computing.
+   						</li>
+   					</ul>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center">
+				<h2 class="no-text-transform">Native Add-ons</h2>
+
+				<aside class="notes">
+					<p>
+						Without further ado...intro.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<p>
+					Interface between JS running in Node.js and C/C++ libraries
+				</p>
+
+				<aside class="notes">
+					<p>
+						A Node.js native add-on provides an interface between JavaScript running in Node.js and, primarily, C/C++ libraries.
+					</p>
+					<p>
+						From the perspective of Node.js applications, an add-on is just another module which an application can <code>require</code>.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform">APIs</h2>
+				<div class="row">
+					<ul class="column column-3">
+						&nbsp;
+					</ul>
+					<ul class="column column-8">
+						<li class="fragment">V8</li>
+						<li class="fragment">libuv</li>
+						<li class="fragment">Internal Libraries</li>
+						<li class="fragment">Dependencies</li>
+					</ul>
+				</div>
+
+				<aside class="notes">
+					<p>
+						Add-ons have access to four components of the Node.js runtime:
+					</p>
+     				<ul>
+     					<li>
+     						V8: C++ library which runs JavaScript. Allows creating objects, calling functions, etc.
+     					</li>
+     					<li>
+     						libuv: C library which implements the Node.js event loop, worker threads, and async behavior. Allows interacting with the filesystem, sockets, timers, and system events.
+     					</li>
+     					<li>
+     						Internal Node.js libraries: Node.js exposed C++ APIs.
+     					</li>
+     					<li>
+     						Node.js own dependencies: statically linked libraries; e.g., OpenSSL.
+     					</li>
+     				</ul>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Examples</h2>
+				<div class="row">
+					<ul class="column column-3">
+						&nbsp;
+					</ul>
+					<ul class="column column-8">
+						<li class="fragment"><a href="https://github.com/Level/leveldown">leveldown</a></li>
+						<li class="fragment"><a href="https://github.com/nickdesaulniers/node-nanomsg">node-nanomsg</a></li>
+						<li class="fragment"><a href="https://github.com/Automattic/node-canvas">node-canvas</a></li>
+						<li class="fragment"><a href="https://github.com/mapbox/node-sqlite3">node-sqlite3</a></li>
+						<li class="fragment"><a href="https://github.com/stdlib-js/stdlib">stdlib</a></li>
+					</ul>
+				</div>
+
+				<aside class="notes">
+					<p>
+						Native add-on examples...
+					</p>
+					<ul>
+						<li>
+							<a href="https://github.com/Level/leveldown">leveldown</a>: pure C++ Node.js LevelDB binding
+						</li>
+    					<li>
+    						<a href="https://github.com/nickdesaulniers/node-nanomsg">node-nanomsg</a>: Node.js binding for nanomsg</a>
+    					</li>
+    					<li>
+    						<a href="https://github.com/Automattic/node-canvas">node-canvas</a>: Cairo backed canvas implementation
+    					</li>
+     					<li>
+     						<a href="https://github.com/mapbox/node-sqlite3">node-sqlite3</a>: Node.js bindings for SQLite3
+     					</li>
+     					<li>
+     						<a href="https://github.com/stdlib-js/stdlib">stdlib</a>: contains Node.js bindings to high-performance BLAS libraries
+     					</li>
+     				</ul>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Why?</h2>
+
+				<aside class="notes">
+					Why would you choose a native add-on over plain JavaScript?
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<div class="row">
+					<ul class="column column-3">
+						&nbsp;
+					</ul>
+					<ul class="column column-8">
+						<li class="fragment">Leverage existing codebases</li>
+						<li class="fragment">Access lower-level APIs</li>
+						<li class="fragment">Non-JavaScript features</li>
+						<li class="fragment">Performance</li>
+					</ul>
+				</div>
+
+				<aside class="notes">
+					<p>
+						Four primary reasons...
+					</p>
+					<p>
+						One reason is that you want to link to existing C/C++ libraries. This allows you to avoid having to port and re-implement functionality in JavaScript, which, for larger libraries, can be a substantial undertaking.
+					</p>
+					<p>
+     					Next, you may want to access lower-level APIs, such as worker threads.
+     				</p>
+     				<p>
+     					Third, you may need language features not available in JavaScript, such as 64-bit integers or SIMD.
+     				<p>
+     					Last, you need a performance boost, including leveraging hardware optimization.
+     				</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					<p>
+						So now that you have decided to use native add-ons, how do you go about doing so?
+					</p>
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Toolchain</h2>
+
+				<aside class="notes">
+					And with that, we need to talk about the native add-on toolchain.
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center" data-transition="slide-in slide-out" data-transition-speed="default">
+				<h2 class="no-text-transform">node-gyp</h2>
+
+				<aside class="notes">
+					<p>
+						We begin with node-gyp, which is a cross-platform command-line tool written in Node.js for compiling native add-ons for Node.js.
+					</p>
+					<p>
+						node-gyp bundles GYP and automatically downloads necessary development files and headers for target Node.js versions.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center" data-transition="slide-in slide-out" data-transition-speed="default">
+				<h2 class="no-text-transform">GYP</h2>
+
+				<aside class="notes">
+					<p>
+     					GYP, generate your project, is a meta-build system, which builds other build systems, depending on the target platform.
+     				</p>
+     				<p>
+     					The aim of GYP is to replicate, as closely as possible, the native build setup of a target platform IDE. So, for example, on MacOS, that means generating XCode projects. Or on Windows, Visual Studio projects.
+     				</p>
+     				<p>
+						And once GYP generates the build system, we can compile our add-on.
+     				</p>
+     				<p>
+     					Now, for a bit of background and to introduce a caveat in using GYP, GYP was developed in 2009, when Chrome was Windows-only. When they wanted to build for Mac, they did not want to maintain two separate build systems. So they created GYP to centralize build configuration and automatically generate native projects.
+     				</p>
+    				<p>
+    					As time moved on, so did the Chrome team. GYP has now been deprecated in favor of GN which targets Ninja. Despite being "abandonware", Node.js seems wedded to it for the foreseeable future.
+    				</p>
+    				<p>
+    					As an aside, this is part of the risk of hitching a ride on corporate projects, where they are not incentivized to maintain and devote resources to something they no longer use internally.
+    				</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					Moving along, developing native add-ons has, historically, not been a smooth process.
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Challenges</h2>
+
+				<div class="row">
+					<ul class="column column-3">
+						&nbsp;
+					</ul>
+					<ul class="column column-8">
+						<li class="fragment">V8</li>
+						<li class="fragment">NAN</li>
+						<li class="fragment">GYP</li>
+						<li class="fragment">Engine Bias</li>
+					</ul>
+				</div>
+
+				<aside class="notes">
+					<p>
+						Here have been some of the challenges.
+					</p>
+					<p>
+						The foremost challenge has been handling breaking changes in V8.
+					</p>
+    				<p>
+    					Each Node.js major release entailed a new V8. In the past, the V8 team was not concerned about backward compatibility and would often introduce sweeping changes, removing, replacing, and adding interfaces and functionality. These changes would force add-on authors to effectively rewrite their packages, publish a semver major, and make providing backward compatibility extremely difficult.
+    				</p>
+					<p>
+     					To alleviate some of the "pain" of native add-ons, members of the Node.js community created a package NAN, which stands for Native Abstractions for Node.js.
+     				</p>
+     				<p>
+     					NAN attempts to provide a stable abstraction layer that native add-on authors can target. Internally, NAN handles the complex logic required to maintain functionality from one V8 version to the next.
+     				</p>
+     				<p>
+     					And while NAN has been beneficial, even it has caused churn due to breaking changes in its API while attempting to smooth the transition from one V8 version to the next.
+     				</p>
+					<p>
+    					Another issue is GYP. GYP was designed with a particular use case in mind: Chrome. It was not designed with Node.js add-ons in mind.
+    				</p>
+    				<p>
+    					Further, GYP documentation is either poor or incomplete, presenting significant challenges whenever you want to do something beyond simple "hello world" type examples.
+    				</p>
+    				<p>
+    					To make up for a lack of documentation, you end up scouring the Internet looking for other projects using GYP and seeing how those projects handle special configurations. And in particular, anytime you want to break out of the confines of C/C++, say, to compile Fortran or Cuda, good luck.
+    				</p>
+    				<p>
+    					Resources are few and far between.
+    				</p>
+					<p>
+    					A more forward looking concern is that node-gyp is biased toward V8. Meaning the toolchain is not engine neutral. This means compiling Node.js and Node.js native add-ons with alternative engines, such as Chakra, is less straightforward, requiring shims like Chakrashim.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					Despite these challenges, native add-ons are highly important for numeric computing.
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Numeric Computing</h2>
+
+				<aside class="notes">
+					<p>
+						Native add-ons are important for numeric computing because they allow us to interface with high-performance numeric computing libraries written in C/C++.
+					</p>
+   					<p>
+   						What you find when combing through the implementations of Julia, R, and Python libraries like NumPy and SciPy is that a substantial amount of the functionality they expose relies on providing wrappers for existing numeric computing code bases written in C/C++ and Fortran.
+   					</p>
+   					<p>
+   						For example, for high-performance linear algebra, these platforms wrap BLAS and LAPACK. For fast Fourier transforms, they wrap FFTW. In the particular case of Julia, for BigInt, Julia wraps GMP. For BigFloat, Julia wraps MPFR.
+   					</p>
+   					<p>
+   						Node.js native add-ons allow us to do something similar as these other platforms; namely, expose high-performance numeric computing functionality to Node.js and to JavaScript.
+   					</p>
+   					<p>
+   						This means we can leverage highly optimized libraries which have stood the test of time and do less "reinventing the wheel".
+   					</p>
+   					<p>
+						In short, native add-ons allow us to do in Node.js what other environments used for numeric computing can do.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					At this point, we have discussed, at a high-level, what native add-ons are, their toolchain, some challenges, and motivated why they are important for numeric computing. Let's now make things a bit more concrete by walking through a basic example...
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in slide-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Basic Example</h2>
+
+				<aside class="notes">
+
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs c" contenteditable>
+/* hypot.h */
+#ifndef C_HYPOT_H
+#define C_HYPOT_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+double c_hypot( const double x, const double y );
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						We first define a basic header file defining the interface to the function exported to the JavaScript runtime, taking care to guard against name mangling and ensuring similar behavior as might be observed when using a standard C compiler.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs c" contenteditable>
+/* hypot.c */
+#include &lt;math.h&gt;
+#include "hypot.h"
+
+double c_hypot( const double x, const double y ) {
+    double tmp;
+    double a;
+    double b;
+    if ( isnan( x ) || isnan( y ) ) {
+        return NAN;
+    }
+    if ( isinf( x ) || isinf( y ) ) {
+        return INFINITY;
+    }
+    a = x;
+    b = y;
+    if ( a &lt; 0.0 ) {
+        a = -a;
+    }
+    if ( b &lt; 0.0 ) {
+        b = -b;
+    }
+    if ( a &lt; b ) {
+        tmp = b;
+        b = a;
+        a = tmp;
+    }
+    if ( a == 0.0 ) {
+        return 0.0;
+    }
+    b /= a;
+    return a * sqrt( 1.0 + (b*b) );
+}
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Next, we write our implementation. In this example, we are computing the hypotenuse, guarding against overflow and underflow.
+					</p>
+					<p>
+						This is a standard C implementation which imports the standard math library and includes a function which accepts two arguments, x and y, and returns a numeric result.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs c" contenteditable>
+/* addon.cpp */
+#include &lt;nan.h&gt;
+#include "hypot.h"
+
+namespace addon_hypot {
+
+    using Nan::FunctionCallbackInfo;
+    using Nan::ThrowTypeError;
+    using Nan::ThrowError;
+    using v8::Number;
+    using v8::Local;
+    using v8::Value;
+
+    void node_hypot( const FunctionCallbackInfo&lt;Value&gt;&amp; info ) {
+        if ( info.Length() != 2 ) {
+            ThrowError( "invalid invocation. Must provide 2 arguments." );
+            return;
+        }
+        if ( !info[ 0 ]-&gt;IsNumber() ) {
+            ThrowTypeError( "invalid input argument. First argument must be a number." );
+            return;
+        }
+        if ( !info[ 1 ]-&gt;IsNumber() ) {
+            ThrowTypeError( "invalid input argument. Second argument must be a number." );
+            return;
+        }
+        const double x = info[ 0 ]-&gt;NumberValue();
+        const double y = info[ 1 ]-&gt;NumberValue();
+
+        Local&lt;Number&gt; h = Nan::New( c_hypot( x, y ) );
+        info.GetReturnValue().Set( h );
+    }
+
+    NAN_MODULE_INIT( Init ) {
+        Nan::Export( target, "hypot", node_hypot );
+    }
+
+    NODE_MODULE( addon, Init )
+}
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Once our implementation is finished, we create a wrapper written in C++ which calls the C function.
+					</p>
+					<p>
+						Note the inclusion of NAN. Recall that NAN provides a stable API, abstracting away the differences between V8 versions.
+					</p>
+					<p>
+						Most of the C++ is unwrapping and wrapping object values. The function wrapper takes a single argument: the arguments object. We do some basic input value sanity checks and then proceed to unwrap the individual arguments x and y. Once we have x and y, we call our C function and set the return value.
+					</p>
+					<p>
+						And finally, we end by exporting an initialization function, which is required of all Node.js native add-ons.
+					</p>
+					<p>
+						I should note that we did not have to write the implementation in a separate C file. We could have written in directly in our add-on file; however, using a separate file a) facilitates re-usability of source files in non-add-on contexts and b) is a more common scenario when working with existing codebases.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs yaml" contenteditable>
+# binding.gyp
+{
+  'targets': [
+    {
+      'target_name': 'addon',
+      'sources': [
+        'addon.cpp',
+        'hypot.c'
+      ],
+      'include_dirs': [
+		'&lt;!(node -e "require(\'nan\')")',
+		'./'
+      ]
+    }
+  ]
+}
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						We then create a minimal <i>binding.gyp</i> file, which GYP uses to generate the build project for the target platform.
+					</p>
+					<p>
+						In GYP speak, we define a target--here, the target name is "addon".
+					</p>
+					<p>
+						The <i>sources</i> field indicates each source file which should be compiled.
+					</p>
+					<p>
+						And finally, we list the directories which contain header files. Of note, the <code>&lt;!</code> instructs GYP to execute a command and is referred to in the GYP documentation as a command expansion. Here, we want Node to evaluate the string containing the <code>require</code> statement. When NAN is required, it prints the location of its header files to stdout, thus allowing us to dynamically resolve the NAN header file location.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs bash" contenteditable>
+# Navigate to add-on directory:
+$ cd path/to/hypot/binding.gyp
+
+# Generate build files:
+$ node-gyp configure
+
+# On Windows:
+# node-gyp configure --msvs_version=2015
+
+# Build add-on:
+$ node-gyp build
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Once we have created the four files, we can now build our add-on.
+					</p>
+					<p>
+						To do so, we navigate to the add-on directory containing the <code>binding.gyp</code> file.
+					</p>
+					<p>
+						Then we generate the build files using the <i>configure</i> subcommand. This step generates the build files which will be a Makefile on Unix platforms (including MacOS) and a vcxproj file on Windows.
+					</p>
+					<p>
+						Finally, we run <i>build</i> to actually compile the add-on.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs javascript" contenteditable>
+/* hypot.js */
+var hypot = require( './path/to/build/Release/addon.node' ).hypot;
+
+var h = hypot( 5.0, 12.0 );
+// returns 13.0
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						After compiling an add-on, we can use the exported function in JavaScript.
+					</p>
+					<p>
+						By default, <code>node-gyp</code> outputs the compiled file to a <code>Release</code> subdirectory within a directory named <code>build</code>.
+					</p>
+					<p>
+						As may be observed in the <code>require</code> statement, the add-on exports an object with a <code>hypot</code> method, as defined when we wrote our <code>addon.cpp</code> file.
+					</p>
+					<p>
+						When invoked, this function behaves just like a comparable function implemented in JavaScript, accepting numeric arguments and returning a number.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center" data-transition="slide-in slide-out" data-transition-speed="default">
+				<table>
+					<thead>
+						<tr>
+							<th></th>
+							<th>ops/sec</th>
+							<th>perf</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Builtin</td>
+							<td>3954799</td>
+							<td>1x</td>
+						</tr>
+						<tr>
+							<td>Native</td>
+							<td>4732108</td>
+							<td>1.2x</td>
+						</tr>
+						<tr>
+							<td>JavaScript</td>
+							<td>7337790</td>
+							<td>1.85x</td>
+						</tr>
+					</tbody>
+				</table>
+				<aside class="notes">
+					<p>
+						Okay, so we have implemented our add-on and we're ready to use it, but we should ask ourselves: how does the performance compare to an implementation written purely in JavaScript?
+					</p>
+					<p>
+						Here are benchmark results run on my laptop running Node.js version 8 which is using one of the latest versions of V8.
+					</p>
+					<p>
+						In the first row, I am showing the results for the builtin <code>hypot</code> function provided by the JavaScript standard math library. We see that, on my machine, we can compute the hypotenuse around 4 million times per second.
+					</p>
+					<p>
+						On the next row, I am showing the results of our native add-on. We see that we get a slight performance boost of around 800,000 operations per second.
+					</p>
+					<p>
+						I should note that comparing our add-on implementation to the builtin <code>hypot</code> is not strictly apples to apples, as the builtin function is variadic and polymorphic, while our add-on only accepts two numeric arguments. However, showing the performance of the builtin method is useful for establishing baseline performance.
+					</p>
+					<p>
+						Lastly, on the third row, I am showing the results of an equivalent implementation written purely in JavaScript. We can see that, when compared to add-on performance, we can perform 2.5 million more operations per second, which is a significant performance boost.
+					</p>
+					<p>
+						Two takeaways. First, simply because we can write code in C, this does not mean we will better performance by doing so due to overhead when calling into an add-on. Second, simply because something is a standard, this does not mean the function is fast, in an absolute sense. You can often achieve better performance in JavaScript via userland implementations by restricting the domain of input argument types and choosing your algorithms wisely.
+					</p>
+					<p>
+						For those curious about how WebAssembly compares, be sure to come to my talk tomorrow on WebAssembly. :)
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in slide-out" data-transition-speed="default">
+				<h2 class="no-text-transform"><a title="BLAS" href="http://www.netlib.org/blas/">BLAS</a></h2>
+
+				<aside class="notes">
+					<p>
+						<a title="BLAS" href="http://www.netlib.org/blas/">BLAS</a>, or Basic Linear Algebra Subprograms, are routines that provide standard building blocks for performing basic vector and matrix operations.
+					</p>
+					<p>
+						BLAS routines are split into three levels. Level 1 BLAS routines perform scalar, vector and vector-vector operations. Level 2 BLAS routines perform matrix-vector operations. Level 3 BLAS routines perform matrix-matrix operations.
+					</p>
+					<p>
+						BLAS routines are commonly used in the development of high quality linear algebra software (e.g., LAPACK) due to their efficiency, portability, and wide availability. And they form part of the bedrock of most modern numeric computing environments.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs fortran" contenteditable>
+! dasum.f
+! Computes the sum of absolute values.
+double precision function dasum( N, dx, stride )
+  implicit none
+  integer :: stride, N
+  double precision :: dx(*)
+  double precision :: dtemp
+  integer :: nstride, mp1, m, i
+  intrinsic dabs, mod
+  ! ..
+  dasum = 0.0d0
+  dtemp = 0.0d0
+  ! ..
+  if ( N &lt;= 0 .OR. stride &lt;= 0 ) then
+    return
+  end if
+  ! ..
+  if ( stride == 1 ) then
+    m = mod( N, 6 )
+    if ( m /= 0 ) then
+      do i = 1, m
+        dtemp = dtemp + dabs( dx( i ) )
+      end do
+      if ( N &lt; 6 ) then
+        dasum = dtemp
+        return
+      end if
+    end if
+    mp1 = m + 1
+    do i = mp1, N, 6
+      dtemp = dtemp + &amp;
+        dabs( dx( i ) ) + dabs( dx( i+1 ) ) + &amp;
+        dabs( dx( i+2 ) ) + dabs( dx( i+3 ) ) + &amp;
+        dabs( dx( i+4 ) ) + dabs( dx( i+5 ) )
+    end do
+  else
+    nstride = N * stride
+    do i = 1, nstride, stride
+      dtemp = dtemp + dabs( dx( i ) )
+    end do
+  end if
+  dasum = dtemp
+  return
+end function dasum
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						An example BLAS routine is the Level 1 function <code>dasum</code>, which stands for double absolute value sum. As suggested by the name, the function computes the sum of absolute values for a vector whose values are of type <code>double</code>.
+					</p>
+					<p>
+						The algorithm is not particularly interesting, but should suffice in providing an illustrative example as to how we might expose this or a similar function to JavaScript.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs fortran" contenteditable>
+! dasumsub.f
+! Wraps dasum as a subroutine.
+subroutine dasumsub( N, dx, stride, sum )
+  implicit none
+  ! ..
+  interface
+    double precision function dasum( N, dx, stride )
+      integer :: stride, N
+      double precision :: dx(*)
+    end function dasum
+  end interface
+  ! ..
+  integer :: stride, N
+  double precision :: sum
+  double precision :: dx(*)
+  ! ..
+  sum = dasum( N, dx, stride )
+  return
+end subroutine dasumsub
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Recall that Node.js native add-ons are intended to providing C/C++ bindings. In which case, the first thing we need to do is provide a C interface to the Fortran function.
+					</p>
+					<p>
+						The first obstacle in doing so is that we cannot use <code>dasum</code> directly from C because Fortran expects arguments to be passed by reference rather than by value. Furthermore, while not applicable here, Fortran functions can only return scalar values, not arrays. Thus, the general best practice is to wrap Fortran functions as subroutines (equivalent of a C function returning <code>(void)</code>), where we can pass a pointer for storing the output return value.
+					</p>
+					<p>
+						In which case, the first thing we have to do is wrap our Fortran function as a Fortran subroutine.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs c" contenteditable>
+/* dasum_fortran.h */
+#ifndef DASUM_FORTRAN_H
+#define DASUM_FORTRAN_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void dasumsub( const int *, const double *, const int *, double * );
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Similar to our <code>hypot</code> example, we create a header file defining the subroutine prototype.
+					<p>
+						If compiled as C++, we prevent name mangling so that the compiler emits a binary file having undecorated names, thus mirroring the behavior of a C/Fortran compiler, where we note that a Fortran compiler must be configured to not attach underscores.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs c" contenteditable>
+/* dasum.h */
+#ifndef DASUM_H
+#define DASUM_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+double c_dasum( const int N, const double *X, const int stride );
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						We can now create the header file containing the prototype for our C wrapper, using the naming convention in which we attach <code>c_</code> as a prefix to the function name.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs c" contenteditable>
+/* dasum_f.c */
+#include "dasum.h"
+#include "dasum_fortran.h"
+
+double c_dasum( const int N, const double *X, const int stride ) {
+    double sum;
+    dasumsub( &amp;N, X, &amp;stride, &amp;sum );
+    return sum;
+}
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Our C wrapper is fairly straightforward, passing all arguments by reference to the Fortran subroutine.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs cpp" contenteditable>
+/* addon.cpp */
+#include &lt;nan.h&gt;
+#include "dasum.h"
+
+namespace addon_dasum {
+
+    using Nan::FunctionCallbackInfo;
+    using Nan::TypedArrayContents;
+    using Nan::ThrowTypeError;
+    using Nan::ThrowError;
+    using v8::Number;
+    using v8::Local;
+    using v8::Value;
+
+    void node_dasum( const FunctionCallbackInfo&lt;Value&gt;&amp; info ) {
+        if ( info.Length() != 3 ) {
+            ThrowError( "invalid invocation. Must provide 3 arguments." );
+            return;
+        }
+        if ( !info[ 0 ]-&gt;IsNumber() ) {
+            ThrowTypeError( "invalid input argument. First argument must be a number." );
+            return;
+        }
+        if ( !info[ 2 ]-&gt;IsNumber() ) {
+            ThrowTypeError( "invalid input argument. Third argument must be a number." );
+            return;
+        }
+        const int N = info[ 0 ]-&gt;Uint32Value();
+        const int stride = info[ 2 ]-&gt;Uint32Value();
+
+        TypedArrayContents&lt;double&gt; X( info[ 1 ] );
+
+        Local&lt;Number&gt; sum = Nan::New( c_dasum( N, *X, stride ) );
+        info.GetReturnValue().Set( sum );
+    }
+
+    NAN_MODULE_INIT( Init ) {
+        Nan::Export( target, "dasum", node_dasum );
+    }
+
+    NODE_MODULE( addon, Init )
+}
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Now that we have our C interface, we can create our add-on wrapper.
+					</p>
+					<p>
+						Similar to before, we use NAN, which abstracts away the differences between V8 versions.
+					</p>
+					<p>
+						And similar to before, we perform some basic input argument sanity checks before unwrapping input values. One thing to note is that we need to re-purpose the underlying TypedArray buffer as a C vector. This can be a relatively expensive operation, where, for small vectors, the operation can be effectively rate-limiting.
+					</p>
+					<p>
+						Once we have unwrapped our input arguments, we pass them to our C function and set the return value.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs bash" contenteditable>
+$ gfortran \
+    -std=f95 \
+    -ffree-form \
+    -O3 \
+    -Wall \
+    -Wextra \
+    -Wimplicit-interface \
+    -fno-underscoring \
+    -pedantic \
+    -fPIC \
+    -c \
+    -o dasum.o \
+    dasum.f
+$ gfortran \
+    -std=f95 \
+    -ffree-form \
+    -O3 \
+    -Wall \
+    -Wextra \
+    -Wimplicit-interface \
+    -fno-underscoring \
+    -pedantic \
+    -fPIC \
+    -c \
+    -o dasumsub.o \
+    dasumsub.f
+$ gcc \
+    -std=c99 \
+    -O3 \
+    -Wall \
+    -pedantic \
+    -fPIC \
+    -I ../include \
+    -c \
+    -o dasum_f.o \
+    dasum_f.c
+$ gcc -o dasum dasum_f.o dasumsub.o dasum_f.o -lgfortran
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Compiling our add-on is <strong>not</strong> as straightforward as before. Recall that I mentioned that GYP is oriented toward C/C++, and, here, we have to compile Fortran. Accordingly, we'll going to have to bend GYP to our will, and our configuration will become considerably more complex.
+					</p>
+					<p>
+						Forgetting the add-on for a second, if we were going to compile just the C and Fortran, we do something like the following.
+					</p>
+					<p>
+						First, we would need to compile our Fortran files, specifying various command-line options, including, depending on the platform, whether to generate position-independent code.
+					</p>
+					<p>
+						Next, we would compile our C files, once again specifying various command-line options.
+					</p>
+					<p>
+						After compiling our source files, we would link them together into a single library, making sure to include the standard Fortran libraries.
+					</p>
+					<p>
+						To compile our add-on, we will need to translate this sequence, or something similar, to a GYP configuration file.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs yaml" contenteditable>
+# binding.gyp
+{
+  'variables': {
+    'addon_target_name%': 'addon',
+    'addon_output_dir': './src',
+    'fortran_compiler%': 'gfortran',
+    'fflags': [
+      '-std=f95',
+      '-ffree-form',
+      '-O3',
+      '-Wall',
+      '-Wextra',
+      '-Wimplicit-interface',
+      '-fno-underscoring',
+      '-pedantic',
+      '-c',
+    ],
+    'conditions': [
+      [
+        'OS=="win"',
+        {
+          'obj': 'obj',
+        },
+        {
+          'obj': 'o',
+        }
+      ],
+    ],
+  },
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						We begin by defining variables.
+					</p>
+					<p>
+						While GYP automatically sets C/C++ compiler flags, here we need to explicitly list Fortran compiler flags, as well as explicitly define the Fortran compiler we want to use.
+					</p>
+					<p>
+						And further, we define the object file suffix based on the host platform. This suffix will be used later when compiling Fortran using GYP.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs yaml" contenteditable>
+# binding.gyp (cont.)
+  'targets': [
+    {
+      'target_name': '&lt;(addon_target_name)',
+      'dependencies': [],
+      'include_dirs': [
+        '&lt;!(node -e "require(\'nan\')")',
+        '../include',
+      ],
+      'sources': [
+        'dasum.f',
+        'dasumsub.f',
+        'dasum_f.c',
+        'addon.cpp'
+      ],
+      'link_settings': {
+        'libraries': [
+          '-lgfortran',
+        ],
+        'library_dirs': [],
+      },
+      'cflags': [
+        '-Wall',
+        '-O3',
+      ],
+      'cflags_c': [
+        '-std=c99',
+      ],
+      'cflags_cpp': [
+        '-std=c++11',
+      ],
+      'ldflags': [],
+      'conditions': [
+        [
+          'OS=="mac"',
+          {
+            'ldflags': [
+              '-undefined dynamic_lookup',
+              '-Wl,-no-pie',
+              '-Wl,-search_paths_first',
+            ],
+          },
+        ],
+        [
+          'OS!="win"',
+          {
+            'cflags': [
+              '-fPIC',
+            ],
+          },
+        ],
+      ],
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						After defining variables, we can begin defining targets.
+					</p>
+					<p>
+						Similar to before, we define the target name, this time using variable expansion, and list the source files to compile.
+					</p>
+					<p>
+						We then define various command-line flags depending on the host platform.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs yaml" contenteditable>
+# binding.gyp (cont.)
+      'rules': [
+        {
+          'extension': 'f',
+          'inputs': [
+            '&lt;(RULE_INPUT_PATH)'
+          ],
+          'outputs': [
+            '&lt;(INTERMEDIATE_DIR)/&lt;(RULE_INPUT_ROOT).&lt;(obj)'
+          ],
+          'conditions': [
+            [
+              'OS=="win"',
+              {
+                'rule_name': 'compile_fortran_windows',
+                'process_outputs_as_sources': 0,
+                'action': [
+                  '&lt;(fortran_compiler)',
+                  '&lt;@(fflags)',
+                  '&lt;@(_inputs)',
+                  '-o',
+                  '&lt;@(_outputs)',
+                ],
+              },
+              {
+                'rule_name': 'compile_fortran_linux',
+                'process_outputs_as_sources': 1,
+                'action': [
+                  '&lt;(fortran_compiler)',
+                  '&lt;@(fflags)',
+                  '-fPIC',
+                  '&lt;@(_inputs)',
+                  '-o',
+                  '&lt;@(_outputs)',
+                ],
+              }
+            ],
+          ],
+        },
+      ],
+    },
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						In order to compile the Fortran files, we have to tell GYP how to process them, and we do so by defining a <strong>rule</strong> which is triggered based on a file's file extension.
+					</p>
+					<p>
+						We explicitly specify the input and output arguments which will be subsequently used in command execution using GYP defined variables.
+					</p>
+					<p>
+						Next, we define the <strong>action</strong> to take (i.e., the compile command to invoke) based on the target platform.
+					</p>
+					<p>
+						Now, when GYP goes to create the add-on target, it will compile Fortran files using the specified Fortran compiler and flags.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs yaml" contenteditable>
+# binding.gyp (cont.)
+    {
+      'target_name': 'copy_addon',
+      'type': 'none',
+      'dependencies': [
+        '&lt;(addon_target_name)',
+      ],
+      'actions': [
+        {
+          'action_name': 'copy_addon',
+          'inputs': [],
+          'outputs': [
+            '&lt;(addon_output_dir)/&lt;(addon_target_name).node',
+          ],
+          'action': [
+            'cp',
+            '&lt;(PRODUCT_DIR)/&lt;(addon_target_name).node',
+            '&lt;(addon_output_dir)/&lt;(addon_target_name).node',
+          ],
+        },
+      ],
+    },
+  ],
+}
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Lastly, we add one more target to our <code>binding.gyp</code> file, and the purpose of this target is to move the compiled add-on to a standard location.
+					</p>
+					<p>
+						The main takeaway here is that GYP supports target dependencies. Here, the <code>copy_addon</code> target will not run until <strong>after</strong> the add-on has been compiled. For those familiar with <i>make</i>, this is similar to Makefile prerequisites.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs bash" contenteditable>
+$ cd path/to/dasum/binding.gyp
+$ node-gyp configure
+# node-gyp configure --msvs_version=2015
+$ node-gyp build
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Similar to <code>hypot</code>, to build the add-on, we navigate to the add-on directory containing the <code>binding.gyp</code> file, generate the build files using the <i>configure</i> subcommand, and run <i>build</i> to compile the add-on.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs javascript" contenteditable>
+/* dasum.js */
+var dasum = require( './path/to/src/addon.node' ).dasum;
+
+var x = new Float64Array( [ 1.0, -2.0, 3.0, -4.0, 5.0 ] );
+var s = dasum( x.length, x, 1 );
+// returns 15.0
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						To use the add-on, we proceed as before and simply require the add-on and invoke the exported method.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center" data-transition="slide-in slide-out" data-transition-speed="default">
+				<table>
+					<thead>
+						<tr>
+							<th>Length</th>
+							<th>JavaScript</th>
+							<th>Native</th>
+							<th>Perf</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>10</td>
+							<td>22438020</td>
+							<td>7435590</td>
+							<td>0.33x</td>
+						</tr>
+						<tr>
+							<td>100</td>
+							<td>4350384</td>
+							<td>4594292</td>
+							<td>1.05x</td>
+						</tr>
+						<tr>
+							<td>1000</td>
+							<td>481417</td>
+							<td>827513</td>
+							<td>1.71x</td>
+						</tr>
+						<tr>
+							<td>10000</td>
+							<td>28186</td>
+							<td>97695</td>
+							<td>3.46x</td>
+						</tr>
+						<tr>
+							<td>100000</td>
+							<td>1617</td>
+							<td>9471</td>
+							<td>5.85x</td>
+						</tr>
+						<tr>
+							<td>1000000</td>
+							<td>153</td>
+							<td>873</td>
+							<td>5.7x</td>
+						</tr>
+					</tbody>
+				</table>
+				<aside class="notes">
+					<p>
+						To measure add-on performance, we benchmark against an equivalent implementation written in plain JavaScript. Each row in the table corresponds to an input array length. The two middle columns correspond to operations per second. And the last column is the relative performance of the native add-on to the JavaScript implementation.
+					</p>
+					<p>
+						As we can see, for small arrays, JavaScript is significantly faster, but that advantage disappears as soon as we reach an input array having 100 elements.
+					</p>
+					<p>
+						As I alluded to earlier, array unwrapping and reinterpretation as a C vector can have a significant impact on performance for small arrays. However, that cost is largely fixed, becoming negligible as array length increases.
+					</p>
+					<p>
+						For large input arrays, the add-on is significantly more performant, nearly 6x of the equivalent JavaScript implementation.
+					</p>
+					<p>
+						Once again, for those curious about how WebAssembly compares, be sure to come to my talk tomorrow on WebAssembly. :)
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs c" contenteditable>
+/* dasum_cblas.h */
+#ifndef DASUM_CBLAS_H
+#define DASUM_CBLAS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+double cblas_dasum( const int N, const double *X, const int stride );
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Our BLAS journey is not, however, over. The Fortran reference implementation does not take into account hardware capabilities or chip architecture and, thus, is not the most performant.
+					</p>
+					<p>
+						For optimal performance, we would rather default to hardware optimized BLAS libraries, if available. For instance, on Macs, we could use the Apple Accelerate Framework. On Intel chips, we could use Intel's Math Kernel Library (MKL). For a cross-platform hardware optimized library, we could use OpenBLAS.
+					</p>
+					<p>
+						As an example, if we wanted to use the Apple Accelerate Framework, we could proceed as follows.
+					</p>
+					<p>
+						First, we need to create a header file defining the prototype of the function we want to use. The function signature is the same, as before, but now we are using the CBLAS naming convention.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs c" contenteditable>
+/* dasum_cblas.c */
+#include "dasum.h"
+#include "dasum_cblas.h"
+
+double c_dasum( const int N, const double *X, const int stride ) {
+    return cblas_dasum( N, X, stride );
+}
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						Next, to prevent having to create multiple add-on files, we create a wrapper having the same name <code>c_dasum</code> as before.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs yaml" contenteditable>
+# binding.gyp
+{
+  'variables': {
+    'addon_target_name%': 'addon',
+    'addon_output_dir': './src',
+  },
+  'targets': [
+    {
+      'target_name': '&lt;(addon_target_name)',
+      'dependencies': [],
+      'include_dirs': [
+        '&lt;!(node -e "require(\'nan\')")',
+        './../include',
+      ],
+      'sources': [
+        'dasum_cblas.c',
+        'addon.cpp'
+      ],
+      'link_settings': {
+        'libraries': [
+          '-lblas',
+        ],
+        'library_dirs': [],
+      },
+      'cflags': [
+        '-Wall',
+        '-O3',
+      ],
+      'cflags_c': [
+        '-std=c99',
+      ],
+      'cflags_cpp': [
+        '-std=c++11',
+      ],
+      'ldflags': [
+		'-undefined dynamic_lookup',
+        '-Wl,-no-pie',
+        '-Wl,-search_paths_first'
+      ],
+    },
+    {
+      'target_name': 'copy_addon',
+      'type': 'none',
+      'dependencies': [
+        '&lt;(addon_target_name)',
+      ],
+      'actions': [
+        {
+          'action_name': 'copy_addon',
+          'inputs': [],
+          'outputs': [
+            '&lt;(addon_output_dir)/&lt;(addon_target_name).node',
+          ],
+          'action': [
+            'cp',
+            '&lt;(PRODUCT_DIR)/&lt;(addon_target_name).node',
+            '&lt;(addon_output_dir)/&lt;(addon_target_name).node',
+          ],
+        },
+      ],
+    },
+  ],
+}
+				</code></pre>
+
+				<aside class="notes">
+					<p>
+						We can modify the <code>binding.gyp</code> file to no longer include configuration settings and rules for compiling Fortran files.
+					</p>
+					<p>
+						Instead, we specify the library we want to link to and update the source file list.
+					</p>
+					<p>
+						Building and compiling the add-on follows the same procedure as before.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center" data-transition="slide-in slide-out" data-transition-speed="default">
+				<table>
+					<thead>
+						<tr>
+							<th>Length</th>
+							<th>JavaScript</th>
+							<th>Native</th>
+							<th>Perf</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>10</td>
+							<td>22438020</td>
+							<td>7084870</td>
+							<td>0.31x</td>
+						</tr>
+						<tr>
+							<td>100</td>
+							<td>4350384</td>
+							<td>6428626</td>
+							<td>1.47x</td>
+						</tr>
+						<tr>
+							<td>1000</td>
+							<td>481417</td>
+							<td>3289090</td>
+							<td>6.83x</td>
+						</tr>
+						<tr>
+							<td>10000</td>
+							<td>28186</td>
+							<td>355172</td>
+							<td>12.60x</td>
+						</tr>
+						<tr>
+							<td>100000</td>
+							<td>1617</td>
+							<td>30058</td>
+							<td>18.58x</td>
+						</tr>
+						<tr>
+							<td>1000000</td>
+							<td>153</td>
+							<td>1850</td>
+							<td>12.09x</td>
+						</tr>
+					</tbody>
+				</table>
+				<aside class="notes">
+					<p>
+						When we benchmark the hardware optimized BLAS libraries against equivalent implementations in JavaScript, we get the following results.
+					</p>
+					<p>
+						As with the reference implementation, the add-on is slower for short array lengths.
+					</p>
+					<p>
+						However, as we increase the array length, the add-on achieves significantly better performance even for an array length of 100 and better performance across the board compared to the reference implementation.
+					</p>
+					<p>
+						The key takeaway from these results is to use a hardware optimized library where possible. These type of results are simply not achievable otherwise.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Challenges</h2>
+
+				<div class="row">
+					<ul class="column column-3">
+						&nbsp;
+					</ul>
+					<ul class="column column-8">
+						<li class="fragment">Bugs</li>
+						<li class="fragment">Standards</li>
+						<li class="fragment">Proprietary</li>
+						<li class="fragment">Windows</li>
+						<li class="fragment">Portability</li>
+						<li class="fragment">Complexity</li>
+					</ul>
+				</div>
+				<aside class="notes">
+					<p>
+						At this point, you may be pretty excited seeing a 20x improvement. One small gotcha, however: detecting and/or installing hardware optimized libraries is hard.
+					</p>
+					<p>
+						The first problem is that some hardward optimized libraries are buggy, so you need to provide patches; e.g., Apple Accelerate Framework.
+					</p>
+					<p>
+						Next, resolving the installation locations in a robust cross-platform way is difficult, as no standard location or naming convention exist.
+					</p>
+					<p>
+						Third, some hardware optimized libraries are proprietary and cannot be guaranteed to exist on a given target platform.
+					</p>
+					<p>
+						Fourth, hardware optimized BLAS on Windows is especially painful. And in fact, Fortran BLAS is painful on Windows, in general, and node-gyp cannot compile Fortran on Windows due to node-gyp's dependency on Microsoft Visual Studio, which does not include a Fortran compiler.
+					</p>
+					<p>
+						Fifth, while OpenBLAS is close, there is no fully robust and fully cross-platform hardware optimized BLAS library that you can install alongside your add-on.
+					</p>
+					<p>
+						...which means that you always need to ship a reference implementation fallback, and, for those environments where you cannot compile your native add-on, you also need to ship a pure JavaScript fallback.
+					</p>
+					<p>
+						In short, to handle cross-platform complexity, your <code>binding.gyp</code> file gets nasty quickly.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					There is one other issue, and it is an issue perhaps a bit peculiar to the world of JavaScript. And that issue is <strong>modularity</strong>.
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Modularity</h2>
+
+				<aside class="notes">
+					<p>
+						In short, issues arise when you want to use source files from other packages, similar to "requiring" a module dependency.
+					</p>
+   					<p>
+   						For example, in stdlib, we have BLAS implementations, which are often used in other BLAS implementations. In a single library like BLAS, resolving individual implementations is straightforward as dependencies often reside in the same directory. In our case, dependencies are not co-localized, and, in fact, in the general case, we cannot assume dependency locations due to variability in the package dependency tree (e.g., a dependency could be a sibling or a descendant or even reside in a global package directory).
+   					</p>
+   					<p>
+   						And further, dependency source files can change based on the environment (e.g., whether a system library exists, or a third party library, or a reference implementation fallback, or lack of a Fortran compiler, etc.).
+   					</p>
+   					<p>
+   						If we were only concerned with BLAS, one solution to this problem might be to simply include all of BLAS with each individual package and only expose the desired functionality. Afterall, a linker is the original tree shaker.
+   					</p>
+   					<p>
+   						Just two problems. First, we don't want to have to download all of BLAS in order to build a package exporting a single function. And we certainly don't want to ship all of BLAS with each individual package, as that could lead to a massive amount of duplicated code being sent over the wire.
+   					</p>
+   					<p>
+   						Second, this solution does not scale. If your add-on depends on 10 functions, each from a different monolithic library, then you would have to download and install 10 different monolithic libraries for each build (intelligent caching aside).
+   					</p>
+   					<p>
+   						Some might argue that this is an argument against hypermodularity and in favor of kitchen-sink type libraries.
+   					</p>
+   					<p>
+   						This retort is, however, incorrect. The principle of modularity is an integral part of good software: only ship what you need when you need it, nothing more, end of story.
+   					</p>
+   					<p>
+						In this case, what is needed is a set of tools to help us better think about modularity in the context of native add-ons.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center" data-transition="slide-in slide-out" data-transition-speed="default">
+				<pre><code class="hljs javascript" contenteditable>
+{
+    "options": {
+        "os": "linux",
+        "blas": "",
+        "wasm": false
+    },
+    "fields": [
+        {
+            "field": "src",
+            "resolve": true,
+            "relative": true
+        },
+        {
+            "field": "include",
+            "resolve": true,
+            "relative": true
+        },
+        {
+            "field": "libraries",
+            "resolve": false,
+            "relative": false
+        },
+        {
+            "field": "libpath",
+            "resolve": true,
+            "relative": false
+        }
+    ],
+    "confs": [
+        {
+            "os": "linux",
+            "blas": "",
+            "wasm": false,
+            "src": [
+                "./src/dasum.f",
+                "./src/dasumsub.f",
+                "./src/dasum_f.c"
+            ],
+            "include": [
+                "./include"
+            ],
+            "libraries": [],
+            "libpath": [],
+            "dependencies": []
+        },
+        {
+            "os": "linux",
+            "blas": "openblas",
+            "wasm": false,
+            "src": [
+                "./src/dasum_cblas.c"
+            ],
+            "include": [
+                "./include"
+            ],
+            "libraries": [
+                "-lopenblas",
+                "-lpthread"
+            ],
+            "libpath": [],
+            "dependencies": []
+        },
+        {
+            "os": "mac",
+            "blas": "",
+            "wasm": false,
+            "src": [
+                "./src/dasum.f",
+                "./src/dasumsub.f",
+                "./src/dasum_f.c"
+            ],
+            "include": [
+                "./include"
+            ],
+            "libraries": [],
+            "libpath": [],
+            "dependencies": []
+        },
+        {
+            "os": "mac",
+            "blas": "apple_accelerate_framework",
+            "wasm": false,
+            "src": [
+                "./src/dasum_cblas.c"
+            ],
+            "include": [
+                "./include"
+            ],
+            "libraries": [
+                "-lblas"
+            ],
+            "libpath": [],
+            "dependencies": []
+        },
+        {
+            "os": "mac",
+            "blas": "openblas",
+            "wasm": false,
+            "src": [
+                "./src/dasum_cblas.c"
+            ],
+            "include": [
+                "./include"
+            ],
+            "libraries": [
+                "-lopenblas",
+                "-lpthread"
+            ],
+            "libpath": [],
+            "dependencies": []
+        },
+        {
+            "os": "win",
+            "blas": "",
+            "wasm": false,
+            "src": [
+                "./src/dasum.c"
+            ],
+            "include": [
+                "./include"
+            ],
+            "libraries": [],
+            "libpath": [],
+            "dependencies": []
+        },
+        {
+            "os": "",
+            "blas": "",
+            "wasm": true,
+            "src": [
+                "./src/dasum.c"
+            ],
+            "include": [
+                "./include"
+            ],
+            "libraries": [],
+            "libpath": [],
+            "dependencies": []
+        }
+    ]
+}
+				</code></pre>
+				<aside class="notes">
+					<p>
+   						To address this challenge in stdlib, we leverage the same algorithm used by `require` to resolve dependencies.
+   					</p>
+   					<p>
+   						Namely, we create a <code>manifest.json</code> file for each package which lists source files based on environment conditions as well as any package dependencies containing source files we want to use.
+   					</p>
+   					<p>
+   						When compiling a package, we load the <code>manifest.json</code>, walk the dependency tree, resolve source files tailored to both configuration and environment, and then dynamically populate GYP variables before compiling add-ons.
+   					</p>
+   					<p>
+   						This allows us to decompose traditionally monolithic libraries into separate components, while maintaining dependency resolution.
+   					</p>
+   					<p>
+   						I should note that the approach outlined is applicable more generally to all native add-ons, including those outside of stdlib.
+   					</p>
+   					<p>
+   						If a third party add-on were to include a `manifest.json` which advertised source files, a stdlib add-on would be able to use the functionality contained therein in its implementation.
+   					</p>
+   					<p>
+   						I should also mention, the approach I just outlined is not wholly a new idea--several people have tried their hands at building a C/C++ package manager, often inspired by npm--but I have yet to see an approach which allows explicitly resolving add-on dependencies within a node_modules dependency tree.
+   					</p>
+   					<p>
+   						If you are interested in learning more about we do things, see stdlib.
+   					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform"><a title="N-API" href="https://github.com/nodejs/abi-stable-node">N-API</a></h2>
+
+				<aside class="notes">
+					A Node API for Node.js native add-ons.
+				</aside>
+			</section>
+
+			<section class="center" data-transition="slide-in slide-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Features</h2>
+				<div class="row">
+					<ul class="column column-3">
+						&nbsp;
+					</ul>
+					<ul class="column column-8">
+						<li class="fragment">Stability</li>
+						<li class="fragment">Compatibility</li>
+						<li class="fragment">VM Neutrality</li>
+					</ul>
+				</div>
+				<aside class="notes">
+					<ul>
+						<li>
+							A stable API abstraction. In the same spirit as NAN.
+						</li>
+						<li>
+							Compatibility across Node versions.
+						</li>
+						<li>
+							Key differentiator: same API across Node VMs; e.g., V8, Chakra, etc.
+						</li>
+					</ul>
+					<p>
+						In short, N-API promises native add-ons which just work. :)
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<pre><code class="hljs c" contenteditable>
+/* addon.cpp */
+#include &lt;node_api.h&gt;
+#include &lt;assert.h&gt;
+#include "hypot.h"
+
+namespace addon_hypot {
+
+    napi_value node_hypot( napi_env env, napi_callback_info info ) {
+        napi_status status;
+
+        size_t argc = 2;
+        napi_value argc[ 2 ];
+        status = napi_get_cb_info( env, info, &amp;argc, args, nullptr, nullptr );
+        assert( status == napi_ok );
+
+        if ( argc &lt; 2 ) {
+            napi_throw_type_error( env, "invalid invocation. Must provide 2 arguments." );
+            return nullptr;
+        }
+
+        napi_value vtype0;
+        status = napi_typeof( env, args[ 0 ], &amp;vtype0 );
+        assert( status == napi_ok );
+        if ( vtype0 != napi_number ) {
+            napi_throw_type_error( env, "invalid input argument. First argument must be a number." );
+            return nullptr;
+        }
+
+        napi_value vtype1;
+        status = napi_typeof( env, args[ 0 ], &amp;vtype1 );
+        assert( status == napi_ok );
+        if ( vtype1 != napi_number ) {
+            napi_throw_type_error( env, "invalid input argument. Second argument must be a number." );
+            return nullptr;
+        }
+
+        const double x;
+        status = napi_get_value_double( env, args[ 0 ], &amp;x );
+        assert( status == napi_ok );
+
+        const double y;
+        status = napi_get_value_double( env, args[ 1 ], &amp;y );
+        assert( status == napi_ok );
+
+        napi_value h;
+        status = napi_create_number( env, c_hypot( x, y ), &amp;h );
+        assert( status == napi_ok );
+
+        return h;
+    }
+
+    #define DECLARE_NAPI_METHOD( name, func ) { name, 0, func, 0, 0, 0, napi_default, 0 }
+
+    void Init( napi_env env, napi_value exports, napi_value module, void* priv ) {
+        napi_status status;
+        napi_property_descriptor addDescriptor = DECLARE_NAPI_METHOD( "hypot", node_hypot );
+        status = napi_define_properties( env, exports, 1, &amp;addDescriptor );
+        assert( status == napi_ok );
+    }
+
+    NAPI_MODULE( addon, Init )
+}
+				</code></pre>
+				<aside class="notes">
+					<p>
+						As an example of what a N-API add-on <em>might</em> look like, and I say <em>might</em> because the implementation is still experimental, here is the <code>hypot</code> add-on refactored from NAN to N-API.
+					</p>
+					<p>
+						The first notable difference is that we no longer directly call V8 methods, and, instead, everything goes through N-API.
+					</p>
+					<p>
+						The second notable difference is the usage of return value references and the returning of <code>status</code> values.
+					</p>
+					<p>
+						Otherwise, we still need to export an initialization function and an add-on still follows the same general structure.
+					</p>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Conclusions</h2>
+
+				<div class="row">
+					<ul class="column column-3">
+						&nbsp;
+					</ul>
+					<ul class="column column-8">
+						<li class="fragment">Parity</li>
+						<li class="fragment">Performance</li>
+						<li class="fragment">Progress</li>
+					</ul>
+				</div>
+
+				<aside class="notes">
+					<p>
+						There are three takeaways I want you to take away from this talk...
+					</p>
+					<ol>
+						<li>
+							First, native add-ons allow us to achieve parity with other numeric computing environments.
+						</li>
+						<li>
+							Second, native add-ons <i>may</i> provide a performance boost, but a performance improvement is not guaranteed. Add-on authors need to carefully evaluate algorithms and implementations and do proper benchmarking. We have seen, however, that, when done well, as with hardware optimized BLAS libraries, native add-on provide a dramatic performance boost.
+						</li>
+						<li>
+							Third, N-API promises a significantly less painful add-on future and represents important progress in helping make Node.js, and JavaScript, a first-class numeric computing environment.
+						</li>
+					</ol>
+				</aside>
+			</section>
+
+			<section class="center">
+				<aside class="notes">
+					(next slide)
+				</aside>
+			</section>
+
+			<section class="center" data-transition="fade-in fade-out" data-transition-speed="default">
+				<h2 class="no-text-transform">Thank you!</h2>
+
+				<aside class="notes">
+
+				</aside>
+			</section>
+
+			<section class="center">
+				<div>
+					<a href="https://github.com/stdlib-js/stdlib"><img src="img/hex_sticker_black.svg" alt="stdlib" class="undecorated"></a>
+				</div>
+
+				<p>
+					<small><a href="https://github.com/stdlib-js/stdlib"><i class="fa fa-github"></i> https://github.com/stdlib-js/stdlib</a></small>
+					<br>
+					<small><a href="https://www.patreon.com/athan"><i class="fa fa-bitcoin"></i> https://www.patreon.com/athan</a></small>
+				</p>
+
+				<aside class="notes">
+					<p>
+						If you want to find more add-on examples, be sure to check out stdlib, a standard library for Node.js and JavaScript, with an emphasis on numeric computing, where we have add-on resources and many examples.
+					</p>
+				</aside>
+			</section>
+
+			<section>
+				<!-- Add blank slide to separate main presentation from appendix -->
+				<aside class="notes">
+					Intentionally left blank.
+				</aside>
+			</section>
+
+			<section class="center">
+				<h2>Appendix</h2>
+			</section>
+
+			<section class="center">
+				<!-- Intentionally many lines -->
+				<pre><code class="hljs javascript" contenteditable>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+				</code></pre>
+				<aside class="notes">
+					Slide for code editing.
+				</aside>
+			</section>
+
+			<!-- <section class="center">
+				<h2>Heading</h2>
+			</section> -->
+
+			<section class="center">
+				<h2>The End</h2>
+			</section>
+
+		</div>
+
+	</div>
+
+	<footer>
+		<a href="https://github.com/kgryte"><i class="fa fa-github"></i> Athan Reines</a> | <a href="https://twitter.com/kgryte"><i class="fa fa-twitter"></i> @kgryte</a> | <a href="https://twitter.com/stdlibjs"><i class="fa fa-twitter"></i> @stdlibjs</a>
+	</footer>
+
+	<script src="js/lib/reveal/head.min.js"></script>
+	<script src="js/lib/reveal/reveal.js"></script>
+	<script src="js/lib/reveal/init.js"></script>
+	<script src="js/script.js"></script>
+</body>
+</html>
