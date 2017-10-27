@@ -127,16 +127,16 @@
   							I'll follow by showing a basic native add-on example.
   						</li>
    						<li>
-   							After the basic example, I'll move on to a more complex example where we need to write an add-on which links a BLAS library written in Fortran to the JavaScript runtime.
+   							After the basic example, I'll show a more complex example where we need to write an add-on which links a BLAS library written in Fortran to the JavaScript runtime.
    						</li>
    						<li>
    							Next, I will show performance comparisons.
    						</li>
    						<li>
-   							Then, I'll discuss some of the hurdles we have faced writing native add-ons for numeric computing and how we have worked to address them.
+   							Then, I'll discuss some of the challenges we have faced writing native add-ons for numeric computing and how we have addressed them.
    						</li>
    						<li>
-   							Before concluding, I will mention N-API, an application binary interface, or ABI, which aims to provide a stable abstraction layer over JavaScript engines.
+   							Before concluding, I will mention N-API, an application binary interface, or ABI, which will provide a stable abstraction layer over JavaScript engines.
    						</li>
    						<li>
    							And finally, I will offer some conclusions and additional resources you can use to get started using Node.js native add-ons for high-performance numeric computing.
@@ -300,7 +300,7 @@
 						Four primary reasons...
 					</p>
 					<p>
-						One reason is that you want to link to existing C/C++ libraries. This allows you to avoid having to port and re-implement functionality in JavaScript, which, for larger libraries, can require significant time and resources.
+						One reason is that you want to link to existing C/C++ libraries. This allows you to avoid having to port and re-implement functionality in JavaScript, which, for larger libraries, can require significant time and investment.
 					</p>
 					<p>
      					Next, you may want to access lower-level APIs, such as worker threads.
@@ -356,7 +356,7 @@
      					GYP, which stands for "generate your project", is a meta-build system, which builds other build systems, depending on the target platform.
      				</p>
      				<p>
-     					The aim of GYP is to replicate, as closely as possible, the native build setup of a target platform IDE. So, for example, on MacOS, that means generating XCode projects. Or, on Windows, Visual Studio projects.
+     					The aim of GYP is to replicate, as closely as possible, the native build setup of a target platform IDE. For example, on MacOS, that means generating XCode projects. On Windows, Visual Studio projects.
      				</p>
      				<p>
 						And once GYP generates the build system, we can compile our add-on.
@@ -366,7 +366,7 @@
 
 			<section class="center">
 				<aside class="notes">
-					Historically, developing native add-ons has not been a smooth process.
+					Historically, developing native add-ons has been a difficult process.
 				</aside>
 			</section>
 
@@ -402,16 +402,16 @@
      					NAN attempts to provide a stable abstraction layer that native add-on authors can target. Internally, NAN handles the complex logic required to maintain functionality from one V8 version to the next.
      				</p>
      				<p>
-     					And while NAN has been beneficial, even it has caused churn due to breaking changes in its API.
+     					And while NAN has been beneficial, even it has had breaking changes in its API.
      				</p>
 					<p>
-    					Another issue is GYP. GYP was designed with a particular use case in mind: Chrome. It was not designed with Node.js add-ons in mind.
+    					Another issue is GYP. GYP was designed with a particular use case in mind: Chrome. It was not explicitly designed for Node.js add-ons.
     				</p>
     				<p>
     					Further, GYP documentation is either poor or incomplete, presenting significant challenges whenever you want to do something beyond simple "hello world" type examples.
     				</p>
     				<p>
-    					Because of poor documentation, you spend considerable time searching the Internet and looking for other projects using GYP to see how those projects handle special configurations. And in particular, anytime you want to use GYP to compile languages other than C/C++, e.g., Fortran or Cuda, good luck.
+    					Because of poor documentation, you spend considerable time searching the Internet and looking for other projects using GYP to see how those projects handle special configurations. And in particular, anytime you want to use GYP to compile languages other than C/C++, e.g., Fortran, Cuda, Rust, and Golang, good luck.
     				</p>
     				<p>
     					Resources are few and far between.
@@ -448,14 +448,14 @@
    						This means we can leverage highly optimized libraries which have been used with great success for decades and not spend time rewriting implementations.
    					</p>
    					<p>
-						In short, native add-ons allow us to do in Node.js what other environments used for numeric computing can do.
+						In summary, native add-ons allow us to do in Node.js what other environments used for numeric computing can do.
 					</p>
 				</aside>
 			</section>
 
 			<section class="center">
 				<aside class="notes">
-					At this point, we have discussed, at a high-level, what native add-ons are, their toolchain, some challenges, and motivated why they are important for numeric computing. Let's now walk through a basic example...
+					At this point, we have discussed, at a high-level, what native add-ons are, their toolchain, some challenges, and motivated why they are important for numeric computing. Let's now discuss a basic example...
 				</aside>
 			</section>
 
@@ -588,7 +588,7 @@ namespace addon_hypot {
 						Once our implementation is finished, we create a wrapper written in C++ which calls the C function.
 					</p>
 					<p>
-						Note the inclusion of NAN. Recall that NAN provides a stable API across V8 versions.
+						Note the inclusion of NAN and recall that NAN provides a stable API across V8 versions.
 					</p>
 					<p>
 						Most of the C++ is unwrapping and wrapping object values. The function wrapper takes a single argument: the arguments object. We perform basic input value sanity checks and then proceed to unwrap the individual arguments x and y. Once we have x and y, we call our C function and set the return value.
@@ -627,13 +627,13 @@ namespace addon_hypot {
 						We then create a minimal <i>binding.gyp</i> file, which GYP uses to generate the build project for the target platform.
 					</p>
 					<p>
-						In GYP speak, we define a target--here, the target name is "addon".
+						In GYP terminology, we define a target--here, the target name is "addon".
 					</p>
 					<p>
 						The <i>sources</i> field indicates each source file which should be compiled.
 					</p>
 					<p>
-						And finally, we list the directories which contain header files. The <code>&lt;!</code> instructs GYP to execute a command and is referred to in the GYP documentation as a command expansion. Here, we want Node to evaluate the string containing the <code>require</code> statement. When NAN is required, it prints the location of its header files to stdout, thus allowing us to dynamically resolve the NAN header file location.
+						And finally, we list the directories which contain header files. Here, we use GYP command expansion to instruct Node to evaluate the string containing the <code>require</code> statement. When NAN is required, it prints the location of its header files to stdout, thus allowing us to dynamically resolve the NAN header file location.
 					</p>
 				</aside>
 			</section>
@@ -683,10 +683,7 @@ var h = hypot( 5.0, 12.0 );
 						After compiling an add-on, we can use the exported function in JavaScript.
 					</p>
 					<p>
-						By default, <code>node-gyp</code> outputs the compiled file to a <code>Release</code> subdirectory within a directory named <code>build</code>.
-					</p>
-					<p>
-						As may be observed in the <code>require</code> statement, the add-on exports an object with a <code>hypot</code> method, as defined when we wrote our <code>addon.cpp</code> file.
+						As may be observed in the <code>require</code> statement, the add-on exports an object with a method, whose name matches the export we defined when we wrote our <code>addon.cpp</code> file.
 					</p>
 					<p>
 						When invoked, this function behaves just like a comparable function implemented in JavaScript, accepting numeric arguments and returning a number.
@@ -735,13 +732,10 @@ var h = hypot( 5.0, 12.0 );
 						On the next row, I am showing the results of our native add-on. We see that we get a slight performance boost of around 800,000 operations per second.
 					</p>
 					<p>
-						I should note that comparing our add-on implementation to the builtin <code>hypot</code> is not strictly a fair comparison, as the builtin function is variadic and polymorphic, while our add-on only accepts two numeric arguments. However, showing the performance of the builtin method is useful for establishing baseline performance.
-					</p>
-					<p>
 						Lastly, on the third row, I am showing the results of an equivalent implementation written purely in JavaScript. We can see that, when compared to add-on performance, we can perform 2.5 million more operations per second, which is a significant performance boost.
 					</p>
 					<p>
-						Two comments. First, simply because we can write code in C, this does not mean we will better performance by doing so due to overhead when calling into an add-on. Second, simply because something is a standard, this does not mean the function is fast, in an absolute sense. You can often achieve better performance in JavaScript via userland implementations by restricting the domain of input argument types and choosing your algorithms wisely.
+						Two comments. First, simply because we can write code in C, this does not mean we will achieve better performance by doing so, due to overhead when calling into an add-on. Second, simply because something is a standard, this does not mean the function is fast, in an absolute sense. You can often achieve better performance in JavaScript via userland implementations by restricting the domain of input argument types and choosing your algorithms wisely.
 					</p>
 				</aside>
 			</section>
@@ -757,7 +751,7 @@ var h = hypot( 5.0, 12.0 );
 
 				<aside class="notes">
 					<p>
-						<a title="BLAS" href="http://www.netlib.org/blas/">BLAS</a>, or Basic Linear Algebra Subprograms, are routines that provide standard building blocks for performing basic vector and matrix operations.
+						<a title="BLAS" href="http://www.netlib.org/blas/">BLAS</a>, or Basic Linear Algebra Subprograms, are routines that provide standard implementations for performing basic vector and matrix operations.
 					</p>
 					<p>
 						BLAS routines are split into three levels. Level 1 BLAS routines perform scalar, vector and vector-vector operations. Level 2 BLAS routines perform matrix-vector operations. Level 3 BLAS routines perform matrix-matrix operations.
@@ -884,8 +878,6 @@ void dasumsub( const int *, const double *, const int *, double * );
 				<aside class="notes">
 					<p>
 						Similar to our <code>hypot</code> example, we create a header file defining the subroutine prototype.
-					<p>
-						If compiled as C++, we prevent name mangling so that the compiler emits a binary file having undecorated names, thus mirroring the behavior of a C/Fortran compiler, where we note that a Fortran compiler must be configured to not attach underscores.
 					</p>
 				</aside>
 			</section>
@@ -1099,10 +1091,7 @@ $ gcc -o dasum dasum_f.o dasumsub.o dasum_f.o -lgfortran
 						We begin by defining variables.
 					</p>
 					<p>
-						While GYP automatically sets C/C++ compiler flags, here we need to explicitly list Fortran compiler flags, as well as explicitly define the Fortran compiler we want to use.
-					</p>
-					<p>
-						And furthermore, we define the object file suffix based on the host platform. This suffix will be used later when compiling Fortran using GYP.
+						While GYP automatically sets C/C++ compiler flags, we must explicitly list Fortran compiler flags and explicitly define the Fortran compiler we want to use.
 					</p>
 				</aside>
 			</section>
@@ -1361,13 +1350,13 @@ var s = dasum( x.length, x, 1 );
 						To measure add-on performance, we benchmark against an equivalent implementation written in plain JavaScript. Each row in the table corresponds to an input array length. The two middle columns correspond to operations per second. And the last column is the relative performance of the native add-on to the JavaScript implementation.
 					</p>
 					<p>
-						As we can see, for small arrays, JavaScript is significantly faster, but that advantage disappears as soon as we reach an input array having 100 elements.
+						As we can see, for small arrays, JavaScript is significantly faster, but that advantage disappears as soon as an input array has 100 elements.
 					</p>
 					<p>
-						As I alluded to earlier, array unwrapping and reinterpretation as a C vector can have a significant impact on performance for small arrays. However, that cost is largely fixed, becoming negligible as array length increases.
+						As I mentioned earlier, array unwrapping and reinterpretation as a C vector can have a significant impact on performance for small arrays. However, that cost is largely constant, becoming negligible as array length increases.
 					</p>
 					<p>
-						For large input arrays, the add-on is significantly more performant, nearly 6x of the equivalent JavaScript implementation.
+						For large input arrays, the add-on is significantly more performant, nearly 6 times more performant than the equivalent JavaScript implementation.
 					</p>
 				</aside>
 			</section>
@@ -1396,7 +1385,7 @@ double cblas_dasum( const int N, const double *X, const int stride );
 						Our BLAS journey is not, however, over. The Fortran reference implementation does not take into account hardware capabilities or chip architecture and, thus, is not the most performant.
 					</p>
 					<p>
-						For optimal performance, we would rather default to hardware optimized BLAS libraries, if available. For instance, on MacOS, we could use the Apple Accelerate Framework. On Intel chips, we could use Intel's Math Kernel Library (MKL). For a cross-platform hardware optimized library, we could use OpenBLAS.
+						For optimal performance, we would rather use hardware optimized BLAS libraries, if available. For instance, on MacOS, we could use the Apple Accelerate Framework. On Intel chips, we could use Intel's Math Kernel Library (MKL). For a cross-platform hardware optimized library, we could use OpenBLAS.
 					</p>
 					<p>
 						As an example, if we wanted to use the Apple Accelerate Framework, we could proceed as follows.
@@ -1565,7 +1554,7 @@ double c_dasum( const int N, const double *X, const int stride ) {
 						However, as we increase the array length, the add-on achieves significantly better performance even for an array length of 100 and better performance when compared to the reference implementation.
 					</p>
 					<p>
-						The key takeaway from these results is to use a hardware optimized library where possible. These results are simply not achievable otherwise.
+						The main conclusion of these results is to use a hardware optimized library when available. These results are simply not possible otherwise.
 					</p>
 				</aside>
 			</section>
@@ -1597,16 +1586,16 @@ double c_dasum( const int N, const double *X, const int stride ) {
 						At this point, you may be excited seeing a 20x improvement. One small problem, however: detecting and/or installing hardware optimized libraries is hard.
 					</p>
 					<p>
-						The first problem is that some hardward optimized libraries contains bugs, so you need to provide patches; e.g., Apple Accelerate Framework.
+						The first problem is that some hardware optimized libraries contain bugs, so you need to provide patches; e.g., Apple Accelerate Framework.
 					</p>
 					<p>
-						Next, resolving the installation locations in a robust cross-platform way is difficult, as no standard location or naming convention exist.
+						Next, resolving library installation locations in a robust cross-platform way is difficult, as no standard locations or naming conventions exist.
 					</p>
 					<p>
-						Third, some hardware optimized libraries are proprietary and cannot be guaranteed to exist on a given target platform.
+						Third, some hardware optimized libraries are proprietary and cannot be guaranteed to exist on a target platform.
 					</p>
 					<p>
-						Fourth, hardware optimized BLAS on Windows is especially painful. And in fact, Fortran BLAS is painful on Windows, in general, and node-gyp cannot compile Fortran on Windows due to node-gyp's dependency on Microsoft Visual Studio, which does not include a Fortran compiler.
+						Fourth, hardware optimized BLAS on Windows is especially painful. And in fact, in general, Fortran BLAS is painful on Windows, and node-gyp cannot compile Fortran on Windows due to node-gyp's dependency on Microsoft Visual Studio, which does not include a Fortran compiler.
 					</p>
 					<p>
 						Fifth, while OpenBLAS is close, there is no fully robust and fully cross-platform hardware optimized BLAS library that you can install alongside your add-on.
@@ -1615,7 +1604,7 @@ double c_dasum( const int N, const double *X, const int stride ) {
 						...which means that you always need to ship a reference implementation fallback, and, for those environments where you cannot compile your native add-on, you also need to ship a pure JavaScript fallback.
 					</p>
 					<p>
-						In short, to handle cross-platform complexity, your <code>binding.gyp</code> file becomes complex very quickly.
+						In short, to handle cross-platform complexity, your <code>binding.gyp</code> files become complex very quickly.
 					</p>
 				</aside>
 			</section>
@@ -1731,7 +1720,7 @@ namespace addon_hypot {
 				</code></pre>
 				<aside class="notes">
 					<p>
-						As an example of what a N-API add-on <em>might</em> look like, and I say <em>might</em> because the implementation is still experimental, here is the <code>hypot</code> add-on refactored from NAN to N-API.
+						As an example of what an N-API add-on <em>might</em> look like, and I say <em>might</em> because the implementation is still experimental, here is the <code>hypot</code> add-on refactored from NAN to N-API.
 					</p>
 					<p>
 						The first notable difference is that we no longer directly call V8 methods, and, instead, everything goes through N-API.
@@ -1767,17 +1756,17 @@ namespace addon_hypot {
 
 				<aside class="notes">
 					<p>
-						There are three points I want you to take away from this talk...
+						There are three points I want you to remember from this talk...
 					</p>
 					<ol>
 						<li>
 							First, native add-ons allow us to achieve parity with other numeric computing environments.
 						</li>
 						<li>
-							Second, native add-ons <i>may</i> provide a performance boost, but a performance improvement is not guaranteed. Add-on authors need to carefully evaluate algorithms and implementations and do proper benchmarking. We have seen, however, that, when done well, as with hardware optimized BLAS libraries, native add-on provide a significant performance boost.
+							Second, native add-ons <i>may</i> provide a performance improvement, but a performance improvement is not guaranteed. Add-on authors need to carefully evaluate algorithms and implementations and do proper benchmarking. We have seen, however, that, when done well, as with hardware optimized BLAS libraries, native add-ons can significantly increase performance.
 						</li>
 						<li>
-							Third, N-API promises a significantly less painful add-on future and represents important progress in helping make Node.js, and JavaScript, a first-class numeric computing environment.
+							Third, N-API promises a less painful add-on future and represents important progress in helping make Node.js, and JavaScript, a first-class numeric computing environment.
 						</li>
 					</ol>
 				</aside>
