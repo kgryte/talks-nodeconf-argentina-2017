@@ -1227,44 +1227,6 @@ $ gcc -o dasum dasum_f.o dasumsub.o dasum_f.o -lgfortran
 			</section>
 
 			<section class="center">
-				<pre><code class="hljs yaml" contenteditable>
-# binding.gyp (cont.)
-    {
-      'target_name': 'copy_addon',
-      'type': 'none',
-      'dependencies': [
-        '&lt;(addon_target_name)',
-      ],
-      'actions': [
-        {
-          'action_name': 'copy_addon',
-          'inputs': [],
-          'outputs': [
-            '&lt;(addon_output_dir)/&lt;(addon_target_name).node',
-          ],
-          'action': [
-            'cp',
-            '&lt;(PRODUCT_DIR)/&lt;(addon_target_name).node',
-            '&lt;(addon_output_dir)/&lt;(addon_target_name).node',
-          ],
-        },
-      ],
-    },
-  ],
-}
-				</code></pre>
-
-				<aside class="notes">
-					<p>
-						Lastly, we add one more target to our <code>binding.gyp</code> file, and the purpose of this target is to move the compiled add-on to a standard location.
-					</p>
-					<p>
-						The main takeaway here is that GYP supports target dependencies. Here, the <code>copy_addon</code> target will not run until <strong>after</strong> the add-on has been compiled. For those familiar with <i>make</i>, this is similar to Makefile prerequisites.
-					</p>
-				</aside>
-			</section>
-
-			<section class="center">
 				<pre><code class="hljs bash" contenteditable>
 $ cd path/to/dasum/binding.gyp
 $ node-gyp configure
@@ -1291,7 +1253,7 @@ var s = dasum( x.length, x, 1 );
 
 				<aside class="notes">
 					<p>
-						To use the add-on, we proceed as before and simply require the add-on and invoke the exported method.
+						To use the add-on, we require the add-on and invoke the exported method.
 					</p>
 				</aside>
 			</section>
