@@ -5,6 +5,8 @@
 
 	var header = document.querySelector( 'header' );
 	var footer = document.querySelector( 'footer' );
+	var title = document.querySelector( '#title-slide' );
+	var presplash = document.querySelector( '#pre-splash' );
 	var splash = document.querySelector( '#splash' );
 	var banner = document.querySelector( '#banner' );
 
@@ -17,7 +19,9 @@
 	function onReady( event ) {
 		if (
 			event.currentSlide === banner ||
-			event.currentSlide === splash
+			event.currentSlide === splash ||
+			event.currentSlide === presplash ||
+			event.currentSlide === title
 		) {
 			header.classList.add( 'hidden' );
 			footer.classList.add( 'hidden' );
@@ -36,13 +40,17 @@
 	function onChange( event ) {
 		if (
 			event.currentSlide === banner ||
-			event.currentSlide === splash
+			event.currentSlide === splash ||
+			event.currentSlide === presplash ||
+			event.currentSlide === title
 		) {
 			header.classList.add( 'hidden' );
 			footer.classList.add( 'hidden' );
 		} else if (
 			event.previousSlide === banner ||
-			event.previousSlide === splash
+			event.previousSlide === splash ||
+			event.previousSlide === presplash ||
+			event.previousSlide === title
 		) {
 			header.classList.remove( 'hidden' );
 			footer.classList.remove( 'hidden' );
